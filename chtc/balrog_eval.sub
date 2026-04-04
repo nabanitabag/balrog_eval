@@ -1,0 +1,36 @@
+# BALROG Inference Eval — CHTC Submit File
+# Usage: condor_submit balrog_eval.sub results_dir=results/eval log_dir=results/eval/logs chtc_user=nbag
+
+universe = container
+container_image = docker://verlai/verl:vllm012.latest
+
+executable  = balrog_eval.sh
+initial_dir = $(results_dir)
+arguments   = $(Process)
+
+environment = "CHTC_USER=$(chtc_user)"
+
+log         = ../../$(log_dir)/$(Process).log
+output      = ../../$(log_dir)/$(Process).out
+error       = ../../$(log_dir)/$(Process).err
+
+stream_output           = true
+transfer_input_files    = ../../.env, ../../balrog_eval.sh
+transfer_output_files   = results_$(Process).tar.gz
+should_transfer_files   = YES
+when_to_transfer_output = ON_EXIT
+
+# Lighter resources — inference only, 0.5B model
+request_cpus            = 4
+request_memory          = 32GB
+request_disk            = 30GB
+
+request_gpus            = 1
+Requirements            = (Target.CUDADriverVersion >= 12.1) && (Target.CUDACapability >= 8.0) && (Target.HasCHTCStaging == true)
+
++WantGPULab             = true
++WantFlocking           = false
++WantGlidein            = false
++GPUJobLength           = "long"
+
+queue 1
